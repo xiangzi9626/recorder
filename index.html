@@ -7,9 +7,32 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>HTML5录音功能</title>
     <link rel="stylesheet" href="/static/css/index.css">
-    <script src="/static/js/recordmp3.min.js"></script>
+    <script src="/static/js/jquery-3.2.1.js"></script>
+    <script src="/static/js/recorder.js"></script>
+    <script>
+        // 禁止浏览器鼠标右键功能
+        document.oncontextmenu = function () {
+            return false;
+        }
+        var audio_context;
+         var recorder;
+        function startUserMedia(stream) {
+            var input = audio_context.createMediaStreamSource(stream);
+            recorder = new Recorder(input);
+        }
+        function startRecording() {
+            recorder && recorder.record();
+        }
+        function stopRecording() {
+            recorder && recorder.stop();
+            recorder.clear();
+        }
+    </script>
 </head>
 <body>
+<audio id="audio" src="">
+    您的浏览器不支持 audio 标签。
+</audio>
 <!-- 头部标题 -->
 <div class="header-wrap">Jon</div>
 <!-- 主体内容区 -->
@@ -20,14 +43,52 @@
     </div>
     <!-- 发送语音按钮 -->
     <div class="wrap inp-wrap">
-        <input type="button" value="按住说话">
+        <input id="btn" type="button" value="按住说话">
     </div>
     <!-- 录制语音弹出层 -->
-    <div class="hide-tips-wrap">
+    <div id="tips" class="hide-tips-wrap">
         <i class="tips-icon"></i>
         <span class="tips-txt">松开发送消息</span>
     </div>
 </div>
-<script src="/static/js/controls.js"></script>
+<script>
+    oBtn = document.getElementById("btn");
+        oHideTips = document.getElementById('tips');
+     oBtn.addEventListener('touchstart', function () {
+         $("#audio").attr("src","");
+         $("#audio")[0].pause();
+         $("#audio").stop();
+         stopRecording();
+         startRecording();
+        oHideTips.style.display = 'block';
+    });
+    oBtn.addEventListener('touchmove', function (e) {
+        e.preventDefault();
+    });
+
+    oBtn.addEventListener("touchend",function(){
+       recorder.exportWAV(function(blob) {
+            var url = URL.createObjectURL(blob);
+            $("#audio").attr("src",url);
+            $("#audio")[0].play();
+        });
+        oHideTips.style.display="none";
+    })
+    window.onload = function init() {
+        try {
+            // webkit shim
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
+            window.URL = window.URL || window.webkitURL;
+            audio_context = new AudioContext;
+         } catch (e) {
+            alert('No web audio support in this browser!');
+        }
+
+        navigator.getUserMedia({audio: true}, startUserMedia, function(e) {
+            __log('No live audio input: ' + e);
+        });
+    };
+</script>
 </body>
 </html>
